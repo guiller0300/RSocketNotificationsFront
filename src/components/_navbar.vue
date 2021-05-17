@@ -87,14 +87,10 @@ export default {
   components: {
     TimeAgo,
   },
-  data() {
-    return {
-      websocketUrl: "ws://localhost:6565/rsocket",
-      dato: 1,
-    };
-  },
   props: ["user"],
   data: () => ({
+    websocketUrl: "ws://localhost:6565/rsocket",
+    dato: "ca",
     selected: [],
     items: [],
     drawer: null,
@@ -128,9 +124,9 @@ export default {
       axios.post("/logout").then((response) => window.location.reload());
     },
     markAsRead() {
-      axios.get("/mark-all-read/" + this.user.id).then((response) => {
+      /*axios.get("/mark-all-read/" + this.user.id).then((response) => {
         this.unreadNotifications = [];
-      });
+      });*/
     },
     send() {
       console.log("Send message:" + this.send_message);
@@ -161,38 +157,18 @@ export default {
         }),
       });
 
-      // error handler
-      const errorHanlder = (e) => console.log(e);
-      // response handler
-      const responseHanlder = (payload) => {
-        console.log(payload.data);
-      };
-      const insertNotification = (socket) => {
+      const numberRequester = (socket, dato) => {
         socket
           .requestStream({
-            metadata: String.fromCharCode("todos".length) + "todos",
+            data: dato,
+            metadata: String.fromCharCode("by.subscriber".length) + "by.subscriber",
           })
           .subscribe({
+            //onComplete: insertNotification(socket),
             onError: errorHanlder,
             onNext: responseHanlder,
             onSubscribe: (subscription) => {
               subscription.request(100); // set it to some max value
-            },
-          });
-      };
-
-      const numberRequester = (socket, dato) => {
-        socket
-          .requestResponse({
-            data: dato,
-            metadata: String.fromCharCode("by.id".length) + "by.id",
-          })
-          .subscribe({
-            onComplete: insertNotification(socket),
-            onError: errorHanlder,
-            onNext: responseHanlder,
-            onSubscribe: (subscription) => {
-              // subscription.request(100); // set it to some max value
             },
           });
       };
@@ -201,6 +177,27 @@ export default {
           numberRequester(sock, this.dato);
         });
       }, errorHanlder);
+      
+
+      // error handler
+      const errorHanlder = (e) => console.log(e);
+      // response handler
+      const responseHanlder = (payload) => {
+        console.log(payload.data);
+      };
+      /*const insertNotification = (socket) => {
+        socket
+          .requestStream({
+            metadata: String.fromCharCode("by.subscriber".length) + "by.subscriber",
+          })
+          .subscribe({
+            onError: errorHanlder,
+            onNext: responseHanlder,
+            onSubscribe: (subscription) => {
+              subscription.request(100); // set it to some max value
+            },
+          });
+      };*/
     },
     disconnect() {
       console.log("trying to disconnect..");
