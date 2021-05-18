@@ -90,7 +90,6 @@ export default {
   },
   props: ["user"],
   data: () => ({
-    usuarioService: null,
     websocketUrl: "ws://localhost:6565/rsocket",
     dato: "ca",
     dptos: ["ca", "cf"],
@@ -104,6 +103,7 @@ export default {
     tooltip: true,
     locale: "en",
   }),
+  usuarioService: null,
   props: ["user"],
   watch: {
     allNotifications(val) {
@@ -115,7 +115,6 @@ export default {
     },
   },
   created() {
-    
     /*this.allNotifications = this.user.notifications;
     this.unreadNotifications =  this.allNotifications.filter(notification => {
         return notification.read_at == null;
@@ -142,7 +141,6 @@ export default {
       }
     },
     connect() {
-      this.usuarioService = new UsuarioService();
       // backend ws endpoint
       const wsURL = "ws://localhost:6565/rsocket";
 
@@ -163,7 +161,7 @@ export default {
         }),
       });
 
-      const numberRequester = (socket, dato) => {
+      const numberRequester = (socket) => {
         socket
           .requestResponse({
             data: {
@@ -176,7 +174,7 @@ export default {
               String.fromCharCode("insert.product".length) + "insert.product",
           })
           .subscribe({
-            onComplete: insertNotification(socket),
+            onComplete: insertNotification,
             onError: errorHanlder,
             onNext: responseHanlder,
             onSubscribe: (subscription) => {
@@ -196,9 +194,11 @@ export default {
       const responseHanlder = (payload) => {
         console.log(payload.data);
       };
-      const insertNotification = (socket, payload) => {
+     const insertNotification = (socket, payload) => {
         this.dptos.forEach(function (valor, indice) {
-          this.usuarioService.getDpto(valor).then((response) => {
+          this.usuarioService = new UsuarioService(valor);
+          this.usuarioService.getDpto().then(response => {
+            console.log(response.data)
            /* socket
               .requestResponse({
                 data: {
