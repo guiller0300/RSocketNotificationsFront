@@ -82,6 +82,7 @@ import {
 } from "rsocket-core";
 import RSocketWebSocketClient from "rsocket-websocket-client";
 import TimeAgo from "vue2-timeago";
+import UsuarioService from "../services/UsuarioService";
 export default {
   name: "websocketdemo",
   components: {
@@ -89,8 +90,11 @@ export default {
   },
   props: ["user"],
   data: () => ({
+    usuarioService: null,
     websocketUrl: "ws://localhost:6565/rsocket",
     dato: "ca",
+    dptos: ["ca", "cf"],
+    subscribers: [],
     selected: [],
     items: [],
     drawer: null,
@@ -110,15 +114,16 @@ export default {
       );
     },
   },
- /* created() {
-    this.allNotifications = this.user.notifications;
+  created() {
+    
+    /*this.allNotifications = this.user.notifications;
     this.unreadNotifications =  this.allNotifications.filter(notification => {
         return notification.read_at == null;
       });
      Echo.private("App.User." + this.user.id).notification(notification => {
        this.allNotifications.unshift(notification.notification);
-     });
-  },*/
+     });*/
+  },
   methods: {
     logout() {
       axios.post("/logout").then((response) => window.location.reload());
@@ -137,6 +142,7 @@ export default {
       }
     },
     connect() {
+      this.usuarioService = new UsuarioService();
       // backend ws endpoint
       const wsURL = "ws://localhost:6565/rsocket";
 
@@ -159,16 +165,22 @@ export default {
 
       const numberRequester = (socket, dato) => {
         socket
-          .requestStream({
-            data: dato,
-            metadata: String.fromCharCode("by.subscriber".length) + "by.subscriber",
+          .requestResponse({
+            data: {
+              id: null,
+              description: "insertando producto",
+              price: 230,
+              subscriber: "juan",
+            },
+            metadata:
+              String.fromCharCode("insert.product".length) + "insert.product",
           })
           .subscribe({
-            //onComplete: insertNotification(socket),
+            onComplete: insertNotification(socket),
             onError: errorHanlder,
             onNext: responseHanlder,
             onSubscribe: (subscription) => {
-              subscription.request(100); // set it to some max value
+              //subscription.request(100); // set it to some max value
             },
           });
       };
@@ -177,7 +189,6 @@ export default {
           numberRequester(sock, this.dato);
         });
       }, errorHanlder);
-      
 
       // error handler
       const errorHanlder = (e) => console.log(e);
@@ -185,19 +196,29 @@ export default {
       const responseHanlder = (payload) => {
         console.log(payload.data);
       };
-      /*const insertNotification = (socket) => {
-        socket
-          .requestStream({
-            metadata: String.fromCharCode("by.subscriber".length) + "by.subscriber",
-          })
-          .subscribe({
-            onError: errorHanlder,
-            onNext: responseHanlder,
-            onSubscribe: (subscription) => {
-              subscription.request(100); // set it to some max value
-            },
+      const insertNotification = (socket, payload) => {
+        this.dptos.forEach(function (valor, indice) {
+          this.usuarioService.getDpto(valor).then((response) => {
+           /* socket
+              .requestResponse({
+                data: {
+                  'id': null,
+                  valor.
+                },
+                metadata: String.fromCharCode("insert.notificacion".length) + "insert.notificacion",
+              })
+              .subscribe({
+                onComplete: console.log(payload.data),
+                onError: errorHanlder,
+                onNext: responseHanlder,
+                onSubscribe: (subscription) => {
+                  //subscription.request(100); // set it to some max value
+                },
+              });*/
+              console.log(response.data + " "+ valor)
           });
-      };*/
+        });
+      };
     },
     disconnect() {
       console.log("trying to disconnect..");
@@ -206,6 +227,7 @@ export default {
   },
   mounted() {
     this.connect();
+    
   },
 };
 </script>
