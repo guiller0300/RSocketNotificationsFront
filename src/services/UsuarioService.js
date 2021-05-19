@@ -1,13 +1,11 @@
 import axios from 'axios';
 
 export default class UsuarioService{
-    
-    dpto = null;
 
-    constructor(dpto){
-        this.dpto = dpto;
+    getDpto(dpto){
+        return axios.get("http://localhost:8080/usuario?dpto="+dpto)
     }
-    getDpto(){
-        return axios.get("http://localhost:8080/usuario?dpto="+this.dpto)
+    getSubscriberNotifications(subscriber){
+       return axios.get("http://localhost:8080/notificaciones?subscriber="+subscriber);
     }
 }

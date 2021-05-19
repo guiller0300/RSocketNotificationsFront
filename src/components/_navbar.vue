@@ -13,7 +13,7 @@
       <template v-slot:activator="{ on }">
         <v-btn id="connect" @click="markAsRead" icon v-on="on">
           <v-badge color="red" overlap>
-            <span slot="badge">{{ items.length }}</span>
+            <span slot="badge">{{ unreadNotifications.length }}</span>
             <v-icon medium>mdi-bell</v-icon>
           </v-badge>
         </v-btn>
@@ -35,24 +35,24 @@
               :inset="item.inset"
             ></v-divider>
 
-            <v-list-item v-else :key="item.title" v-model="selected">
+            <v-list-item v-bind:style="[item.leido== false ? {'background-color': 'rgba(0, 115, 255,0.2)'}:'']" v-else :key="item.id" v-model="selected">
               <v-list-item-avatar>
                 <v-img :src="item.avatar"></v-img>
               </v-list-item-avatar>
 
-              <v-list-item-content class="fondo">
+              <v-list-item-content>
                 <v-list-item-title
-                  v-html="item.title"
+                  v-html="item.titulo"
                   class="select"
                 ></v-list-item-title>
                 <v-list-item-subtitle
-                  v-html="item.subtitle"
+                  v-html="item.descripcion"
                 ></v-list-item-subtitle>
               </v-list-item-content>
               <v-list-item-action>
                 <v-list-item-action-text>
                   <time-ago
-                    :datetime="item.date"
+                    :datetime="item.fecha_inicio"
                     refresh
                     :locale="locale"
                     :tooltip="tooltip"
@@ -140,7 +140,7 @@ export default {
         this.socket.send(JSON.stringify(msg));
       }
     },
-    connect() {
+   /* connect() {
       // backend ws endpoint
       const wsURL = "ws://localhost:6565/rsocket";
 
@@ -174,7 +174,7 @@ export default {
               String.fromCharCode("insert.product".length) + "insert.product",
           })
           .subscribe({
-            onComplete: insertNotification,
+            onComplete: insertNotification(socket,this.usuarioService),
             onError: errorHanlder,
             onNext: responseHanlder,
             onSubscribe: (subscription) => {
@@ -193,43 +193,65 @@ export default {
       // response handler
       const responseHanlder = (payload) => {
         console.log(payload.data);
+        
+       // this.items.push(payload.data)
       };
-     const insertNotification = (socket, payload) => {
-        this.dptos.forEach(function (valor, indice) {
-          this.usuarioService = new UsuarioService(valor);
-          this.usuarioService.getDpto().then(response => {
-            console.log(response.data)
-           /* socket
-              .requestResponse({
-                data: {
-                  'id': null,
-                  valor.
-                },
-                metadata: String.fromCharCode("insert.notificacion".length) + "insert.notificacion",
-              })
-              .subscribe({
-                onComplete: console.log(payload.data),
-                onError: errorHanlder,
-                onNext: responseHanlder,
-                onSubscribe: (subscription) => {
-                  //subscription.request(100); // set it to some max value
-                },
-              });*/
-              console.log(response.data + " "+ valor)
+      const insertNotification = (socket,usuarioService) => {
+        let today = new Date();
+        today.setHours(today.getHours()-5)
+        let final = new Date();
+        final.setDate(final.getDate() + 1);
+        console.log(today+" "+final)
+        this.dptos.forEach(function (valor) {
+          usuarioService.getDpto(valor).then((response) => {
+            response.data.forEach(function (retrieveData, indice) {
+             /* socket
+                .requestResponse({
+                  data: {
+                    'id': null,
+                    'subscriber': retrieveData.id,
+                    'titulo': "Se insertó un nuevo producto",
+                    'descripcion':"Aquí se agrega una descripcion breve de lo que se acaba de hacer (opcional)", 
+                    'fecha_inicio': today,
+                    'fecha_final': final,
+                    'leido':false
+                  },
+                  metadata:
+                    String.fromCharCode("insert.notification".length) +
+                    "insert.notification",
+                })
+                .subscribe({
+                  onComplete: responseHanlder,
+                  onError: errorHanlder,
+                  onNext: responseHanlder,
+                  onSubscribe: (subscription) => {
+                    //subscription.request(100); // set it to some max value
+                  },
+                });
+            });
           });
         });
       };
-    },
+    },*/
     disconnect() {
       console.log("trying to disconnect..");
       this.socket.close();
     },
   },
   mounted() {
-    this.connect();
-    
+    //this.connect();
+    this.usuarioService = new UsuarioService();
+    this.usuarioService.getSubscriberNotifications(this.user).then((response) => {
+      this.items = response.data;
+      console.log(response.data)
+      
+    this.unreadNotifications = this.items.filter(notification => {
+      return notification.leido == false;
+    })
+    })
   },
 };
+
 </script>
 <style scoped>
 .select {
