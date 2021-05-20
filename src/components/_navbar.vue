@@ -11,7 +11,7 @@
       transition="scale-transition"
     >
       <template v-slot:activator="{ on }">
-        <v-btn id="connect" @click="markAsRead" icon v-on="on">
+        <v-btn id="connecta" icon v-on="on">
           <v-badge color="red" overlap>
             <span slot="badge">{{ unreadNotifications.length }}</span>
             <v-icon medium>mdi-bell</v-icon>
@@ -24,7 +24,7 @@
           active-class="pink--text"
           multiple
         >
-          <template v-for="(item, index) in items">
+          <template v-for="(item, index) in items.slice().reverse()">
             <v-subheader v-if="item.header" :key="item.header"
               >Notificaciones</v-subheader
             >
@@ -35,12 +35,23 @@
               :inset="item.inset"
             ></v-divider>
 
-            <v-list-item v-bind:style="[item.leido== false ? {'background-color': 'rgba(0, 115, 255,0.2)'}:'']" v-else :key="item.id" v-model="selected">
+            <v-list-item
+              v-bind:style="[
+                item.leido == false
+                  ? { 'background-color': 'rgba(0, 115, 255,0.1)' }
+                  : '',
+              ]"
+              v-else
+              :key="item.id"
+              v-model="selected"
+            >
               <v-list-item-avatar>
                 <v-img :src="item.avatar"></v-img>
               </v-list-item-avatar>
 
-              <v-list-item-content>
+              <v-list-item-content
+                @click="markAsRead(item.id, item.subscriber)"
+              >
                 <v-list-item-title
                   v-html="item.titulo"
                   class="select"
@@ -75,6 +86,7 @@
 </template>
 
 <script>
+import { bus } from "../main";
 import {
   RSocketClient,
   JsonSerializer,
@@ -115,6 +127,12 @@ export default {
     },
   },
   created() {
+    bus.$on("jai", (data) => {
+      if (data.subscriber == this.user) {
+        this.items.push(data);
+        this.unreadNotifications.push(data);
+      }
+    });
     /*this.allNotifications = this.user.notifications;
     this.unreadNotifications =  this.allNotifications.filter(notification => {
         return notification.read_at == null;
@@ -127,10 +145,12 @@ export default {
     logout() {
       axios.post("/logout").then((response) => window.location.reload());
     },
-    markAsRead() {
-      /*axios.get("/mark-all-read/" + this.user.id).then((response) => {
-        this.unreadNotifications = [];
-      });*/
+    markAsRead(id, subscriber) {
+      this.usuarioService
+        .setReadNotification(id, subscriber)
+        .then((response) => {
+          this.mounted;
+        });
     },
     send() {
       console.log("Send message:" + this.send_message);
@@ -140,7 +160,7 @@ export default {
         this.socket.send(JSON.stringify(msg));
       }
     },
-   /* connect() {
+    /* connect() {
       // backend ws endpoint
       const wsURL = "ws://localhost:6565/rsocket";
 
@@ -241,17 +261,18 @@ export default {
   mounted() {
     //this.connect();
     this.usuarioService = new UsuarioService();
-    this.usuarioService.getSubscriberNotifications(this.user).then((response) => {
-      this.items = response.data;
-      console.log(response.data)
-      
-    this.unreadNotifications = this.items.filter(notification => {
-      return notification.leido == false;
-    })
-    })
+    this.usuarioService
+      .getSubscriberNotifications(this.user)
+      .then((response) => {
+        this.items = response.data;
+        console.log(response.data);
+
+        this.unreadNotifications = this.items.filter((notification) => {
+          return notification.leido == false;
+        });
+      });
   },
 };
-
 </script>
 <style scoped>
 .select {

@@ -8,4 +8,8 @@ export default class UsuarioService{
     getSubscriberNotifications(subscriber){
        return axios.get("http://localhost:8080/notificaciones?subscriber="+subscriber);
     }
+
+    setReadNotification(id, subscriber){
+        return axios.put("http://localhost:8080/notificaciones/"+id+"/"+subscriber);
+    }
 }
