@@ -1,67 +1,56 @@
 <template>
   <div class="home">
     <v-btn id="connect">Insert</v-btn>
-    <img alt="Vue logo" src="../assets/logo.png">
-    <v-card
-    class="mx-auto"
-    max-width="500"
-  >
-    <v-list two-line>
-      <v-list-item-group
-        v-model="selected"
-        active-class="pink--text"
-        multiple
-      >
-        <template v-for="(item, index) in items">
-          <v-list-item :key="item.title">
-            <template v-slot:default="{ active }">
-              <v-list-item-content>
-                <v-list-item-title v-text="item.title"></v-list-item-title>
+    <img alt="Vue logo" src="../assets/logo.png" />
+    <v-card class="mx-auto" max-width="500">
+      <v-list two-line>
+        <v-list-item-group
+          v-model="selected"
+          active-class="pink--text"
+          multiple
+        >
+          <template v-for="(item, index) in items">
+            <v-list-item :key="item.title">
+              <template v-slot:default="{ active }">
+                <v-list-item-content>
+                  <v-list-item-title v-text="item.title"></v-list-item-title>
 
-                <v-list-item-subtitle
-                  class="text--primary"
-                  v-text="item.headline"
-                ></v-list-item-subtitle>
+                  <v-list-item-subtitle
+                    class="text--primary"
+                    v-text="item.headline"
+                  ></v-list-item-subtitle>
 
-                <v-list-item-subtitle v-text="item.subtitle"></v-list-item-subtitle>
-              </v-list-item-content>
+                  <v-list-item-subtitle
+                    v-text="item.subtitle"
+                  ></v-list-item-subtitle>
+                </v-list-item-content>
 
-              <v-list-item-action>
-                <v-list-item-action-text v-text="item.action"></v-list-item-action-text>
+                <v-list-item-action>
+                  <v-list-item-action-text
+                    v-text="item.action"
+                  ></v-list-item-action-text>
 
-                <v-icon
-                  v-if="!active"
-                  color="grey lighten-1"
-                >
-                  mdi-star-outline
-                </v-icon>
+                  <v-icon v-if="!active" color="grey lighten-1">
+                    mdi-star-outline
+                  </v-icon>
 
-                <v-icon
-                  v-else
-                  color="yellow darken-3"
-                >
-                  mdi-star
-                </v-icon>
-              </v-list-item-action>
-            </template>
-          </v-list-item>
+                  <v-icon v-else color="yellow darken-3"> mdi-star </v-icon>
+                </v-list-item-action>
+              </template>
+            </v-list-item>
 
-          <v-divider
-            v-if="index < items.length - 1"
-            :key="index"
-          ></v-divider>
-        </template>
-      </v-list-item-group>
-    </v-list>
-  </v-card>
+            <v-divider v-if="index < items.length - 1" :key="index"></v-divider>
+          </template>
+        </v-list-item-group>
+      </v-list>
+    </v-card>
   </div>
-  
 </template>
 
 
 <script>
-import {bus} from '../main'
-import UsuarioService from '../services/UsuarioService'
+import { bus } from "../main";
+import UsuarioService from "../services/UsuarioService";
 import {
   RSocketClient,
   JsonSerializer,
@@ -70,15 +59,12 @@ import {
 import RSocketWebSocketClient from "rsocket-websocket-client";
 import TimeAgo from "vue2-timeago";
 export default {
-  
   name: "websocketdemo",
   components: {
-    TimeAgo
+    TimeAgo,
   },
   data: () => ({
-    websocketUrl: "ws://localhost:6565/rsocket",
-    dato: "ca",
-    dptos: ["ca", "cf"],
+    dptos: ["ca", "cf"], //Departamentos a los cuales se les notificará
     subscribers: [],
     selected: [],
     items: [],
@@ -90,7 +76,7 @@ export default {
     locale: "en",
   }),
   usuarioService: null,
-  props: ["user", "notificacion"],
+  props: ["user"],
   items: [],
   methods: {
     connect() {
@@ -127,7 +113,7 @@ export default {
               String.fromCharCode("insert.product".length) + "insert.product",
           })
           .subscribe({
-            onComplete: insertNotification(socket,this.usuarioService),
+            onComplete: insertNotification(socket, this.usuarioService),
             onError: errorHanlder,
             onNext: responseHanlder,
             onSubscribe: (subscription) => {
@@ -137,7 +123,7 @@ export default {
       };
       client.connect().then((sock) => {
         document.getElementById("connect").addEventListener("click", () => {
-          numberRequester(sock, this.dato);
+          numberRequester(sock);
         });
       }, errorHanlder);
 
@@ -145,30 +131,31 @@ export default {
       const errorHanlder = (e) => console.log(e);
       // response handler
       const responseHanlder = (payload) => {
-       // console.log(payload.data);
-        
-       //this.items.push(payload.data)
-       bus.$emit('jai',payload.data);
+        // console.log(payload.data);
+
+        //this.items.push(payload.data)
+        bus.$emit("jai", payload.data);
       };
-      const insertNotification = (socket,usuarioService) => {
+      const insertNotification = (socket, usuarioService) => {
         let today = new Date();
-        today.setHours(today.getHours()-5)
+        today.setHours(today.getHours() - 5);
         let final = new Date();
         final.setDate(final.getDate() + 1);
-        console.log(today+" "+final)
+        console.log(today + " " + final);
         this.dptos.forEach(function (valor) {
           usuarioService.getDpto(valor).then((response) => {
             response.data.forEach(function (retrieveData, indice) {
-             socket
+              socket
                 .requestResponse({
                   data: {
-                    'id': null,
-                    'subscriber': retrieveData.id,
-                    'titulo': "Se insertó un nuevo producto",
-                    'descripcion':"Aquí se agrega una descripcion breve de lo que se acaba de hacer (opcional)", 
-                    'fecha_inicio': today,
-                    'fecha_final': final,
-                    'leido':false
+                    id: null,
+                    subscriber: retrieveData.id,
+                    titulo: "Se insertó un nuevo producto",
+                    descripcion:
+                      "Aquí se agrega una descripcion breve de lo que se acaba de hacer (opcional)",
+                    fecha_inicio: today,
+                    fecha_final: final,
+                    leido: false,
                   },
                   metadata:
                     String.fromCharCode("insert.notification".length) +
@@ -193,10 +180,8 @@ export default {
     },
   },
   mounted() {
-    
     this.connect();
     this.usuarioService = new UsuarioService();
   },
 };
-
 </script>

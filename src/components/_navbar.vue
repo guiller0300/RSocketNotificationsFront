@@ -20,7 +20,6 @@
       </template>
       <v-list three-line max-width="450" class="mx-auto">
         <v-list-item-group
-          v-model="selected"
           active-class="pink--text"
           multiple
         >
@@ -42,9 +41,7 @@
                   : '',
               ]"
               v-else
-              :key="item.id"
-              v-model="selected"
-            >
+              :key="item.id">
               <v-list-item-avatar>
                 <v-img :src="item.avatar"></v-img>
               </v-list-item-avatar>
@@ -87,12 +84,6 @@
 
 <script>
 import { bus } from "../main";
-import {
-  RSocketClient,
-  JsonSerializer,
-  IdentitySerializer,
-} from "rsocket-core";
-import RSocketWebSocketClient from "rsocket-websocket-client";
 import TimeAgo from "vue2-timeago";
 import UsuarioService from "../services/UsuarioService";
 export default {
@@ -102,14 +93,9 @@ export default {
   },
   props: ["user"],
   data: () => ({
-    websocketUrl: "ws://localhost:6565/rsocket",
-    dato: "ca",
-    dptos: ["ca", "cf"],
     subscribers: [],
-    selected: [],
     items: [],
     drawer: null,
-    allNotifications: [{ name: "yo" }],
     unreadNotifications: [],
     longString: false,
     tooltip: true,
@@ -133,23 +119,28 @@ export default {
         this.unreadNotifications.push(data);
       }
     });
-    /*this.allNotifications = this.user.notifications;
-    this.unreadNotifications =  this.allNotifications.filter(notification => {
-        return notification.read_at == null;
-      });
-     Echo.private("App.User." + this.user.id).notification(notification => {
-       this.allNotifications.unshift(notification.notification);
-     });*/
   },
   methods: {
     logout() {
       axios.post("/logout").then((response) => window.location.reload());
     },
+    chargeNotifications(){
+     this.usuarioService
+      .getSubscriberNotifications(this.user)
+      .then((response) => {
+        this.items = response.data;
+        console.log(response.data);
+
+        this.unreadNotifications = this.items.filter((notification) => {
+          return notification.leido == false;
+        });
+      });
+    },
     markAsRead(id, subscriber) {
       this.usuarioService
         .setReadNotification(id, subscriber)
         .then((response) => {
-          this.mounted;
+          this.chargeNotifications();
         });
     },
     send() {
@@ -160,99 +151,7 @@ export default {
         this.socket.send(JSON.stringify(msg));
       }
     },
-    /* connect() {
-      // backend ws endpoint
-      const wsURL = "ws://localhost:6565/rsocket";
-
-      // rsocket client
-      const client = new RSocketClient({
-        serializers: {
-          data: JsonSerializer,
-          metadata: IdentitySerializer,
-        },
-        setup: {
-          keepAlive: 60000,
-          lifetime: 180000,
-          dataMimeType: "application/json",
-          metadataMimeType: "message/x.rsocket.routing.v0",
-        },
-        transport: new RSocketWebSocketClient({
-          url: wsURL,
-        }),
-      });
-
-      const numberRequester = (socket) => {
-        socket
-          .requestResponse({
-            data: {
-              id: null,
-              description: "insertando producto",
-              price: 230,
-              subscriber: "juan",
-            },
-            metadata:
-              String.fromCharCode("insert.product".length) + "insert.product",
-          })
-          .subscribe({
-            onComplete: insertNotification(socket,this.usuarioService),
-            onError: errorHanlder,
-            onNext: responseHanlder,
-            onSubscribe: (subscription) => {
-              //subscription.request(100); // set it to some max value
-            },
-          });
-      };
-      client.connect().then((sock) => {
-        document.getElementById("connect").addEventListener("click", () => {
-          numberRequester(sock, this.dato);
-        });
-      }, errorHanlder);
-
-      // error handler
-      const errorHanlder = (e) => console.log(e);
-      // response handler
-      const responseHanlder = (payload) => {
-        console.log(payload.data);
-        
-       // this.items.push(payload.data)
-      };
-      const insertNotification = (socket,usuarioService) => {
-        let today = new Date();
-        today.setHours(today.getHours()-5)
-        let final = new Date();
-        final.setDate(final.getDate() + 1);
-        console.log(today+" "+final)
-        this.dptos.forEach(function (valor) {
-          usuarioService.getDpto(valor).then((response) => {
-            response.data.forEach(function (retrieveData, indice) {
-             /* socket
-                .requestResponse({
-                  data: {
-                    'id': null,
-                    'subscriber': retrieveData.id,
-                    'titulo': "Se insertó un nuevo producto",
-                    'descripcion':"Aquí se agrega una descripcion breve de lo que se acaba de hacer (opcional)", 
-                    'fecha_inicio': today,
-                    'fecha_final': final,
-                    'leido':false
-                  },
-                  metadata:
-                    String.fromCharCode("insert.notification".length) +
-                    "insert.notification",
-                })
-                .subscribe({
-                  onComplete: responseHanlder,
-                  onError: errorHanlder,
-                  onNext: responseHanlder,
-                  onSubscribe: (subscription) => {
-                    //subscription.request(100); // set it to some max value
-                  },
-                });
-            });
-          });
-        });
-      };
-    },*/
+   
     disconnect() {
       console.log("trying to disconnect..");
       this.socket.close();
@@ -261,16 +160,7 @@ export default {
   mounted() {
     //this.connect();
     this.usuarioService = new UsuarioService();
-    this.usuarioService
-      .getSubscriberNotifications(this.user)
-      .then((response) => {
-        this.items = response.data;
-        console.log(response.data);
-
-        this.unreadNotifications = this.items.filter((notification) => {
-          return notification.leido == false;
-        });
-      });
+    this.chargeNotifications();
   },
 };
 </script>
