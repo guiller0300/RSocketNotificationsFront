@@ -11,7 +11,7 @@
       transition="scale-transition"
     >
       <template v-slot:activator="{ on }">
-        <v-btn id="connecta" icon v-on="on">
+        <v-btn icon v-on="on">
           <v-badge color="red" overlap>
             <span slot="badge">{{ unreadNotifications.length }}</span>
             <v-icon medium>mdi-bell</v-icon>

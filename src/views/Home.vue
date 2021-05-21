@@ -2,7 +2,7 @@
   <div class="home">
     <v-btn id="connect">Insert</v-btn>
     <img alt="Vue logo" src="../assets/logo.png" />
-    <v-card class="mx-auto" max-width="500">
+    <!--<v-card class="mx-auto" max-width="500">
       <v-list two-line>
         <v-list-item-group
           v-model="selected"
@@ -43,7 +43,7 @@
           </template>
         </v-list-item-group>
       </v-list>
-    </v-card>
+    </v-card>-->
   </div>
 </template>
 
