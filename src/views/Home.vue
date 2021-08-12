@@ -1,7 +1,22 @@
 <template>
-  <div class="home">
+  <div class="home" v-if="usuario!=null">
     <v-btn id="connect">Insert</v-btn>
     <img alt="Vue logo" src="../assets/logo.png" />
+    
+        <v-col
+          cols="12"
+          sm="6"
+        >
+          <v-select
+            v-model="dptos"
+            :items="items"
+            chips
+            label="Departamento"
+            multiple
+            outlined
+          ></v-select>
+          {{dptos}}
+        </v-col>
     <!--<v-card class="mx-auto" max-width="500">
       <v-list two-line>
         <v-list-item-group
@@ -45,6 +60,39 @@
       </v-list>
     </v-card>-->
   </div>
+  <div v-else-if="usuario==null">
+     <v-app id="inspire">
+      <v-content>
+         <v-container fluid fill-height>
+            <v-layout align-center justify-center>
+               <v-flex xs12 sm8 md4>
+                  <v-card class="elevation-12">
+                     <v-toolbar dark>
+                        <v-toolbar-title>Login</v-toolbar-title>
+                     </v-toolbar>
+                     <v-card-text>
+                        <v-form>
+                           <v-text-field
+                              v-model="login"
+                              prepend-icon="mdi-account"
+                              name="login"
+                              label="Login"
+                              type="text"
+                           ></v-text-field>
+                        </v-form>
+                        {{error}}
+                     </v-card-text>
+                     <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="primary" @click="entrar()">Login</v-btn>
+                     </v-card-actions>
+                  </v-card>
+               </v-flex>
+            </v-layout>
+         </v-container>
+      </v-content>
+   </v-app>
+  </div>
 </template>
 
 
@@ -56,18 +104,21 @@ import {
   JsonSerializer,
   IdentitySerializer,
 } from "rsocket-core";
-import RSocketWebSocketClient from "rsocket-websocket-client";
-import TimeAgo from "vue2-timeago";
+import RSocketWebSocketClient from "rsocket-websocket-client"; //El cliente RSocket
+import TimeAgo from "vue2-timeago"; //Librería para tomar el tiempo en el que llegó la notificación
 export default {
   name: "websocketdemo",
   components: {
     TimeAgo,
   },
   data: () => ({
-    dptos: ["ca", "cf"], //Departamentos a los cuales se les notificará
+    dptos: null, //Departamentos a los cuales se les notificará
     subscribers: [],
     selected: [],
-    items: [],
+    login: null,
+    error: null,
+    items: ['CA','CO', 'CF','SL','MP', 'MM', 'ML'],
+    usuario: null,
     drawer: null,
     allNotifications: [{ name: "yo" }],
     unreadNotifications: [],
@@ -76,9 +127,20 @@ export default {
     locale: "en",
   }),
   usuarioService: null,
-  props: ["user"],
-  items: [],
+  created() {
+    this.usuario = JSON.parse(localStorage.getItem('session'))
+    console.log(this.usuario)
+  },
   methods: {
+    entrar(){
+      this.usuarioService.getUsuariobyId(this.login).then((response) => {
+        this.usuario = localStorage.setItem('session', JSON.stringify(response.data))
+        console.log(JSON.parse(localStorage.getItem('session')))
+        location.reload();
+      }).catch((response) => {
+       this.error = "Usuario inexistente"
+      })
+    },
     connect() {
       // backend ws endpoint
       const wsURL = "ws://localhost:6565/rsocket";
@@ -100,22 +162,24 @@ export default {
         }),
       });
 
+      /*Aquí comienza el código del primer socket para insertar un producto
+      antes de enviar la notificación primero realiza una acción*/
       const numberRequester = (socket) => {
         socket
           .requestResponse({
             data: {
               id: null,
-              description: "insertando producto",
+              description: "insertando producto", //Estos son los datos que se van a enviar en el data.
               price: 230,
               subscriber: "juan",
             },
             metadata:
-              String.fromCharCode("insert.product".length) + "insert.product",
+              String.fromCharCode("insert.product".length) + "insert.product", //Este es el nombre del servicio del RSocket
           })
           .subscribe({
-            onComplete: insertNotification(socket, this.usuarioService),
-            onError: errorHanlder,
-            onNext: responseHanlder,
+            onComplete: insertNotification(socket, this.usuarioService), //Al resultar éxitosa la operación ingresa aquí
+            onError: errorHanlder, //Al haber un error ingresa aquí
+            onNext: responseHanlder, 
             onSubscribe: (subscription) => {
               //subscription.request(100); // set it to some max value
             },
@@ -131,20 +195,23 @@ export default {
       const errorHanlder = (e) => console.log(e);
       // response handler
       const responseHanlder = (payload) => {
-        // console.log(payload.data);
+        //console.log(payload.data);
 
         //this.items.push(payload.data)
         bus.$emit("jai", payload.data);
       };
-      const insertNotification = (socket, usuarioService) => {
-        let today = new Date();
-        today.setHours(today.getHours() - 5);
-        let final = new Date();
-        final.setDate(final.getDate() + 1);
+      const insertNotification = (socket, usuarioService) => { //Este el bloque de código para insertar una notificación
+        let today = new Date(); //la fecha actual
+        today.setHours(today.getHours() - 5); //La hora actual
+        let final = new Date(); //La fecha final
+        final.setDate(final.getDate() + 1); 
         console.log(today + " " + final);
-        this.dptos.forEach(function (valor) {
+        console.log(this.dptos)
+        if(this.dptos != null && this.dptos != []){
+          this.dptos.forEach(function (valor) {
           usuarioService.getDpto(valor).then((response) => {
             response.data.forEach(function (retrieveData, indice) {
+            console.log(retrieveData)
               socket
                 .requestResponse({
                   data: {
@@ -172,6 +239,32 @@ export default {
             });
           });
         });
+        }else{
+          socket
+                .requestResponse({
+                  data: {
+                    id: null,
+                    subscriber: null,
+                    titulo: "Se insertó un nuevo producto",
+                    descripcion:
+                      "Aquí se agrega una descripcion breve de lo que se acaba de hacer (opcional)",
+                    fecha_inicio: today,
+                    fecha_final: final,
+                    leido: false,
+                  },
+                  metadata:
+                    String.fromCharCode("insert.notification".length) +
+                    "insert.notification",
+                })
+                .subscribe({
+                  onComplete: responseHanlder,
+                  onError: errorHanlder,
+                  onNext: responseHanlder,
+                  onSubscribe: (subscription) => {
+                    //subscription.request(100); // set it to some max value
+                  },
+                });
+        }
       };
     },
     disconnect() {
@@ -183,5 +276,10 @@ export default {
     this.connect();
     this.usuarioService = new UsuarioService();
   },
+  computed: {
+    user(){
+      this.$store.state.user;
+    }
+  }
 };
 </script>

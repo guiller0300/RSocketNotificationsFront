@@ -1,8 +1,11 @@
-<template v-slot:activator="{on}">
+<template v-slot:activator="{ on }">
   <v-app-bar app color="primary" dark>
-    <v-app-bar-title>Vue Admin</v-app-bar-title>
+    <v-app-bar-title>Vue Admin
+      Usuario: {{usuario.id}}
+    </v-app-bar-title>
     <v-spacer></v-spacer>
-
+    <p style="cursor: pointer" @click="logout()">Cerrar Sesión</p>
+<!-- Menu de notificaciones -->
     <v-menu
       offset-y
       origin="center center"
@@ -13,17 +16,15 @@
       <template v-slot:activator="{ on }">
         <v-btn icon v-on="on">
           <v-badge color="red" overlap>
-            <span slot="badge">{{ unreadNotifications.length }}</span>
-            <v-icon medium>mdi-bell</v-icon>
+            <span slot="badge">{{ unreadNotifications.length }}</span> <!--Cantidad de notificaciones sin leer -->
+            <v-icon medium>mdi-bell</v-icon> <!-- Icono de campana -->
           </v-badge>
         </v-btn>
       </template>
       <v-list three-line max-width="450" class="mx-auto">
-        <v-list-item-group
-          active-class="pink--text"
-          multiple
-        >
-          <template v-for="(item, index) in items.slice().reverse()">
+        <v-list-item-group active-class="pink--text" multiple>
+          <!-- Recorrido de notificaciones, se utiliza slice.reverse para mostrar de abajo hacia arriba -->
+          <template v-for="(item, index) in items.slice().reverse()"> 
             <v-subheader v-if="item.header" :key="item.header"
               >Notificaciones</v-subheader
             >
@@ -32,32 +33,36 @@
               v-else-if="item.divider"
               :key="index"
               :inset="item.inset"
-            ></v-divider>
+            ></v-divider> <!--divisor por notificación -->
 
             <v-list-item
               v-bind:style="[
-                item.leido == false
-                  ? { 'background-color': 'rgba(0, 115, 255,0.1)' }
+               item.leido == false || item.subscriber == 0
+                  ? { 'background-color': 'rgba(0, 115, 255,0.1)' } //Bloque (color) para cuando la notificación no este leida
                   : '',
               ]"
               v-else
-              :key="item.id">
+              :key="item.id"
+            >
               <v-list-item-avatar>
-                <v-img :src="item.avatar"></v-img>
+                <v-img :src="item.avatar"></v-img> <!--Aqui puede llevar una imagen -->
               </v-list-item-avatar>
-
+              <!-- Acción para cuando se le de click a una notificación -->
               <v-list-item-content
-                @click="markAsRead(item.id, item.subscriber)"
-              >
+                @click="markAsRead(item.id, item.subscriber)" 
+              > 
+              <!-- Titulo de la notificación -->
                 <v-list-item-title
                   v-html="item.titulo"
                   class="select"
                 ></v-list-item-title>
+                <!--Subtitulo o descripción -->
                 <v-list-item-subtitle
                   v-html="item.descripcion"
                 ></v-list-item-subtitle>
               </v-list-item-content>
               <v-list-item-action>
+                <!-- Fecha que se insertó la notificación (Se usa el complemento TimeAgo) -->
                 <v-list-item-action-text>
                   <time-ago
                     :datetime="item.fecha_inicio"
@@ -91,10 +96,10 @@ export default {
   components: {
     TimeAgo,
   },
-  props: ["user"],
   data: () => ({
     subscribers: [],
     items: [],
+    usuario: null,
     drawer: null,
     unreadNotifications: [],
     longString: false,
@@ -102,7 +107,6 @@ export default {
     locale: "en",
   }),
   usuarioService: null,
-  props: ["user"],
   watch: {
     allNotifications(val) {
       this.unreadNotifications = this.allNotifications.filter(
@@ -114,33 +118,38 @@ export default {
   },
   created() {
     bus.$on("jai", (data) => {
-      if (data.subscriber == this.user) {
-        this.items.push(data);
-        this.unreadNotifications.push(data);
+      if (data.subscriber == this.usuario.id || data.subscriber == null) { //cada que se envia una nueva notificación se ingresa aquí
+      //Corrobora que el usuario y el suscriptor sean correctos
+        this.items.push(data); //Se añade
+        this.unreadNotifications.push(data); //Aumenta el valor de las notificaciones sin leer
       }
     });
+    this.usuario = JSON.parse(localStorage.getItem('session')); //Se obtiene el inicio de sesión
   },
   methods: {
     logout() {
-      axios.post("/logout").then((response) => window.location.reload());
+      let valor = null;
+      localStorage.setItem('session', (valor)) //Se vacia el localStorage para cerrar sesión
+       location.reload() //Recarga de página
     },
-    chargeNotifications(){
-     this.usuarioService
-      .getSubscriberNotifications(this.user)
-      .then((response) => {
-        this.items = response.data;
-        console.log(response.data);
+    chargeNotifications() {
+      //Aqui se cargan las notificaciones
+      this.usuarioService
+        .getSubscriberNotifications(this.usuario.id, this.usuario.departamento) //Este es el servicio donde se traen (id de usuario, departamento) el usuario actual
+        .then((response) => {
+          this.items = response.data;
+          console.log(response.data);
 
-        this.unreadNotifications = this.items.filter((notification) => {
-          return notification.leido == false;
+          this.unreadNotifications = this.items.filter((notification) => {
+            return notification.leido == false;
+          });
         });
-      });
     },
     markAsRead(id, subscriber) {
       this.usuarioService
-        .setReadNotification(id, subscriber)
+        .setReadNotification(id, subscriber) //Este es el servicio para cuando se lee una notificación (id de la notificación y suscripto
         .then((response) => {
-          this.chargeNotifications();
+          this.chargeNotifications(); //Se recargan las notificaciones
         });
     },
     send() {
@@ -151,7 +160,7 @@ export default {
         this.socket.send(JSON.stringify(msg));
       }
     },
-   
+
     disconnect() {
       console.log("trying to disconnect..");
       this.socket.close();
@@ -160,8 +169,13 @@ export default {
   mounted() {
     //this.connect();
     this.usuarioService = new UsuarioService();
-    this.chargeNotifications();
+    this.chargeNotifications(); //Se cargan las notificaciones
   },
+  computed: {
+    user() {
+      return this.$store.state.user = 8188;
+    }
+  }
 };
 </script>
 <style scoped>

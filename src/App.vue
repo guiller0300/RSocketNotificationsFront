@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <v-main>
-      <navbar :user="8188"></navbar>
+      <navbar v-if="usuario!=null"></navbar>
       <router-view></router-view>
     </v-main>
     <v-footer class="text-center">
@@ -15,7 +15,13 @@ export default {
   components: {
     Navbar,
   },
-  data: () => ({}),
+  data: () => ({
+    usuario: null,
+  }),
+  created() {
+    this.usuario = localStorage.getItem('session')
+    console.log(this.usuario)
+  }
 };
 </script>
 <!--<template>
