@@ -244,8 +244,8 @@ export default {
                 .requestResponse({
                   data: {
                     id: null,
-                    subscriber: null,
-                    titulo: "Se insertó un nuevo producto",
+                    subscriber: 0,
+                    titulo: "Notificación General",
                     descripcion:
                       "Aquí se agrega una descripcion breve de lo que se acaba de hacer (opcional)",
                     fecha_inicio: today,

@@ -22,7 +22,7 @@
         </v-btn>
       </template>
       <v-list three-line max-width="450" class="mx-auto">
-        <v-list-item-group active-class="pink--text" multiple>
+        <v-list-item-group v-if="items.length > 0" active-class="pink--text" multiple>
           <!-- Recorrido de notificaciones, se utiliza slice.reverse para mostrar de abajo hacia arriba -->
           <template v-for="(item, index) in items.slice().reverse()"> 
             <v-subheader v-if="item.header" :key="item.header"
@@ -75,6 +75,9 @@
             </v-list-item>
           </template>
         </v-list-item-group>
+        <v-list-item-group v-else-if="items.length == 0" active-class="pink--text" multiple>
+          <v-list-item> Sin Notificaciones </v-list-item>
+        </v-list-item-group>
       </v-list>
       <!-- <v-list>
         <v-list-tile :class="{'green': notification.read_at==null}" @click="markAsRead" v-for="notification in allNotifications" :key="notification.id">
@@ -118,7 +121,7 @@ export default {
   },
   created() {
     bus.$on("jai", (data) => {
-      if (data.subscriber == this.usuario.id || data.subscriber == null) { //cada que se envia una nueva notificación se ingresa aquí
+      if (data.subscriber == this.usuario.id || data.subscriber == 0) { //cada que se envia una nueva notificación se ingresa aquí
       //Corrobora que el usuario y el suscriptor sean correctos
         this.items.push(data); //Se añade
         this.unreadNotifications.push(data); //Aumenta el valor de las notificaciones sin leer
@@ -172,9 +175,6 @@ export default {
     this.chargeNotifications(); //Se cargan las notificaciones
   },
   computed: {
-    user() {
-      return this.$store.state.user = 8188;
-    }
   }
 };
 </script>
