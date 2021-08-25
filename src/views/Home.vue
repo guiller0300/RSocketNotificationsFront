@@ -113,7 +113,7 @@ export default {
   },
   data: () => ({
     dptos: null, //Departamentos a los cuales se les notificará
-    subscribers: [],
+    subscribers: [8188, 19221],
     selected: [],
     login: null,
     error: null,
@@ -166,7 +166,7 @@ export default {
       antes de enviar la notificación primero realiza una acción*/
       const numberRequester = (socket) => {
         socket
-          .requestResponse({
+          .requestResponse({ //Aqui va la acción a realizar antes de enviar la notificación (Insertar, actualizar, etc.)
             data: {
               id: null,
               description: "insertando producto", //Estos son los datos que se van a enviar en el data.
@@ -239,10 +239,35 @@ export default {
             });
           });
         });
-        }else{
-          socket
-                .requestResponse({
+        }else if(this.subscribers != null && this.subscribers.length > 0) {
+          this.subscribers.forEach(function(valor){
+          socket.requestResponse({
                   data: {
+                    id: null,
+                    subscriber: valor,
+                    titulo: "Notificación para "+valor,
+                    descripcion:
+                      "Aquí se agrega una descripcion breve de lo que se acaba de hacer (opcional)",
+                    fecha_inicio: today,
+                    fecha_final: final,
+                    leido: false,
+                  },
+                  metadata:
+                    String.fromCharCode("insert.notification".length) +
+                    "insert.notification",
+                })
+                .subscribe({
+                  onComplete: responseHanlder,
+                  onError: errorHanlder,
+                  onNext: responseHanlder,
+                  onSubscribe: (subscription) => {
+                    //subscription.request(100); // set it to some max value
+                  },
+                });
+          })
+        }else{ 
+          socket.requestResponse({
+                    data: {
                     id: null,
                     subscriber: 0,
                     titulo: "Notificación General",
