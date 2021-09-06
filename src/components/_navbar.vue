@@ -92,6 +92,7 @@
 
 <script>
 import { bus } from "../main";
+import { mapMutations, mapState } from 'vuex';
 import TimeAgo from "vue2-timeago";
 import UsuarioService from "../services/UsuarioService";
 export default {
@@ -101,10 +102,10 @@ export default {
   },
   data: () => ({
     subscribers: [],
-    items: [],
-    usuario: null,
+    //items: [],
+    //usuario: null,
     drawer: null,
-    unreadNotifications: [],
+    //unreadNotifications: [],
     longString: false,
     tooltip: true,
     locale: "en",
@@ -127,9 +128,10 @@ export default {
         this.unreadNotifications.push(data); //Aumenta el valor de las notificaciones sin leer
       }
     });
-    this.usuario = JSON.parse(localStorage.getItem('session')); //Se obtiene el inicio de sesión
+    //this.usuario = JSON.parse(localStorage.getItem('session')); //Se obtiene el inicio de sesión
   },
   methods: {
+    ...mapMutations(['getNotifications', 'getUnreadNotifications']),
     logout() {
       let valor = null;
       localStorage.setItem('session', (valor)) //Se vacia el localStorage para cerrar sesión
@@ -140,12 +142,12 @@ export default {
       this.usuarioService
         .getSubscriberNotifications(this.usuario.id, this.usuario.departamento) //Este es el servicio donde se traen (id de usuario, departamento) el usuario actual
         .then((response) => {
-          this.items = response.data;
+          this.getNotifications(response.data);
           console.log(response.data);
 
-          this.unreadNotifications = this.items.filter((notification) => {
+          this.getUnreadNotifications(this.items.filter((notification) => {
             return notification.leido == false;
-          });
+          }));
         });
     },
     markAsRead(id, subscriber) {
@@ -175,6 +177,7 @@ export default {
     this.chargeNotifications(); //Se cargan las notificaciones
   },
   computed: {
+    ...mapState(['unreadNotifications', 'items', 'usuario'])
   }
 };
 </script>
