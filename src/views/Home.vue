@@ -205,8 +205,8 @@ export default {
         //console.log(payload.data);
 
         //this.items.push(payload.data)
-        //bus.$emit("jai", payload.data);
-        this.sendNotification(payload.data);
+        bus.$emit("jai", payload.data);
+        //this.sendNotification(payload.data);
       };
       const insertNotification = (socket, usuarioService) => {
         //Este el bloque de código para insertar una notificación
@@ -242,7 +242,7 @@ export default {
                     onError: errorHanlder,
                     onNext: responseHanlder,
                     onSubscribe: (subscription) => {
-                      //subscription.request(100); // set it to some max value
+                      subscription.request(100); // set it to some max value
                     },
                   });
               });
@@ -267,9 +267,7 @@ export default {
                   "insert.notification",
               })
               .subscribe({
-                onComplete: valor => {
-                  console.log(valor)
-                },//responseHanlder,,//responseHanlder,
+                onComplete: responseHanlder(socket),
                 onError: errorHanlder,
                 onNext: valor => {
                   console.log(valor)
