@@ -11,7 +11,7 @@
         label="Departamento"
         multiple
         outlined
-      ></v-select>
+      ></v-select> <!-- Select para seleccionar el departamento al que pertenece -->
       {{ dptos }}
     </v-col>
     <!--<v-card class="mx-auto" max-width="500">
@@ -111,7 +111,7 @@ export default {
   },
   data: () => ({
     dptos: null, //Departamentos a los cuales se les notificará
-    subscribers: [19221],
+    subscribers: [19221, 8188],
     selected: [],
     login: null,
     error: null,
@@ -193,7 +193,7 @@ export default {
             onError: errorHanlder, //Al haber un error ingresa aquí
             onNext: responseHanlder,
             onSubscribe: (subscription) => {
-              //subscription.request(100); // set it to some max value
+              console.log('memo')//subscription.request(100); // set it to some max value
             },
           });
       };
@@ -203,10 +203,9 @@ export default {
       // response handler
       const responseHanlder = (payload) => {
         //console.log(payload.data);
-
         //this.items.push(payload.data)
-        bus.$emit("jai", payload.data);
-        //this.sendNotification(payload.data);
+        //bus.$emit("jai", payload.data);
+        this.sendNotification(payload.data);
       };
       const insertNotification = (socket, usuarioService) => {
         //Este el bloque de código para insertar una notificación
@@ -242,7 +241,7 @@ export default {
                     onError: errorHanlder,
                     onNext: responseHanlder,
                     onSubscribe: (subscription) => {
-                      subscription.request(100); // set it to some max value
+                      //subscription.request(100); // set it to some max value
                     },
                   });
               });
@@ -267,13 +266,13 @@ export default {
                   "insert.notification",
               })
               .subscribe({
-                onComplete: responseHanlder(socket),
+                onComplete: responseHanlder,
                 onError: errorHanlder,
                 onNext: valor => {
                   console.log(valor)
                 },//responseHanlder,
                 onSubscribe: (subscription) => {
-                  //subscription.request(100); // set it to some max value
+                  console.log('memo')//subscription.request(100); // set it to some max value
                 },
               });
           });

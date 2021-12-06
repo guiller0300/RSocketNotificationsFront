@@ -19,8 +19,10 @@ export default new Vuex.Store({
     sendNotification(state, data) {
       console.log(state.usuario.id) //cada que se envia una nueva notificación se ingresa aquí
         //Corrobora que el usuario y el suscriptor sean correctos
+        if(state.usuario.id == data.subscriber || data.subscriber == null){
         state.items.push(data); //Se añade
         state.unreadNotifications.push(data); //Aumenta el valor de las notificaciones sin leer
+        }
     }
   },
   actions: {
