@@ -1,9 +1,11 @@
 <template v-slot:activator="{ on }">
   <v-app-bar app color="primary" dark>
-    <v-app-bar-title>Vue Admin Usuario: {{ usuario.id }} </v-app-bar-title>
+    <v-app-bar-title>Vue Admin
+      Usuario: {{usuario.id}} <!-- Mostrar nuestro usuario actual --> 
+    </v-app-bar-title>
     <v-spacer></v-spacer>
     <p style="cursor: pointer" @click="logout()">Cerrar Sesión</p>
-    <!-- Menu de notificaciones -->
+<!-- Menu de notificaciones -->
     <v-menu
       offset-y
       origin="center center"
@@ -14,21 +16,15 @@
       <template v-slot:activator="{ on }">
         <v-btn icon v-on="on">
           <v-badge color="red" overlap>
-            <span slot="badge">{{ unreadNotifications.length }}</span>
-            <!--Cantidad de notificaciones sin leer -->
-            <v-icon medium>mdi-bell</v-icon>
-            <!-- Icono de campana -->
+            <span slot="badge">{{ unreadNotifications.length }}</span> <!--Cantidad de notificaciones sin leer -->
+            <v-icon medium>mdi-bell</v-icon> <!-- Icono de campana -->
           </v-badge>
         </v-btn>
       </template>
       <v-list three-line max-width="450" class="mx-auto">
-        <v-list-item-group
-          v-if="items.length > 0"
-          active-class="pink--text"
-          multiple
-        >
+        <v-list-item-group v-if="items.length > 0" active-class="pink--text" multiple>
           <!-- Recorrido de notificaciones, se utiliza slice.reverse para mostrar de abajo hacia arriba -->
-          <template v-for="(item, index) in items.slice().reverse()">
+          <template v-for="(item, index) in items.slice().reverse()"> 
             <v-subheader v-if="item.header" :key="item.header"
               >Notificaciones</v-subheader
             >
@@ -37,12 +33,11 @@
               v-else-if="item.divider"
               :key="index"
               :inset="item.inset"
-            ></v-divider>
-            <!--divisor por notificación -->
+            ></v-divider> <!--divisor por notificación -->
 
             <v-list-item
               v-bind:style="[
-                item.leido == false || item.subscriber == 0
+               item.leido == false || item.subscriber == 0
                   ? { 'background-color': 'rgba(0, 115, 255,0.1)' } //Bloque (color) para cuando la notificación no este leida
                   : '',
               ]"
@@ -50,14 +45,13 @@
               :key="item.id"
             >
               <v-list-item-avatar>
-                <v-img :src="item.avatar"></v-img>
-                <!--Aqui puede llevar una imagen -->
+                <v-img :src="item.avatar"></v-img> <!--Aqui puede llevar una imagen -->
               </v-list-item-avatar>
               <!-- Acción para cuando se le de click a una notificación -->
               <v-list-item-content
-                @click="markAsRead(item.id, item.subscriber)"
-              >
-                <!-- Titulo de la notificación -->
+                @click="markAsRead(item.id, item.subscriber)" 
+              > 
+              <!-- Titulo de la notificación -->
                 <v-list-item-title
                   v-html="item.titulo"
                   class="select"
@@ -81,12 +75,8 @@
             </v-list-item>
           </template>
         </v-list-item-group>
-        <v-list-item-group
-          v-else-if="items.length == 0"
-          active-class="pink--text"
-          multiple
-        >
-          <v-list-item> Sin Notificaciones </v-list-item>
+        <v-list-item-group v-else-if="items.length == 0" active-class="pink--text" multiple>
+          <v-list-item> Sin Notificaciones </v-list-item> <!--Titulo que se mostrará cuando no haya notificaciones -->
         </v-list-item-group>
       </v-list>
       <!-- <v-list>
@@ -102,14 +92,8 @@
 
 <script>
 import { bus } from "../main";
-import { mapMutations, mapState } from "vuex";
+import { mapMutations, mapState } from 'vuex';
 import TimeAgo from "vue2-timeago";
-import {
-  RSocketClient,
-  JsonSerializer,
-  IdentitySerializer,
-} from "rsocket-core";
-import RSocketWebSocketClient from "rsocket-websocket-client"; //El cliente RSocket
 import UsuarioService from "../services/UsuarioService";
 export default {
   name: "websocketdemo",
@@ -122,7 +106,6 @@ export default {
     //usuario: null,
     drawer: null,
     //unreadNotifications: [],
-    activo: null,
     longString: false,
     tooltip: true,
     locale: "en",
@@ -138,44 +121,21 @@ export default {
     },
   },
   created() {
-    bus.$on("jai", (socket, data) => {
-        //cada que se envia una nueva notificación se ingresa aquí
-        /*Corrobora que el usuario y el suscriptor sean correctos
+    bus.$on("jai", (data) => {
+      if (data.subscriber == this.usuario.id || data.subscriber == 0) { //cada que se envia una nueva notificación se ingresa aquí
+      //Corrobora que el usuario y el suscriptor sean correctos
         this.items.push(data); //Se añade
-        this.unreadNotifications.push(data); //Aumenta el valor de las notificaciones sin leer */
-        this.connect(socket);
+        this.unreadNotifications.push(data); //Aumenta el valor de las notificaciones sin leer
+      }
     });
-    console.log(this.usuario.id);
     //this.usuario = JSON.parse(localStorage.getItem('session')); //Se obtiene el inicio de sesión
   },
   methods: {
-    ...mapMutations(["getNotifications", "getUnreadNotifications"]),
-
-    connect(socket) {
-      // error handler
-      const errorHanlder = (e) => console.log(e);
-      // response handler
-      const responseHanlder = (payload) => {
-        console.log(payload.data);
-      };
-      const insertNotification = (socket) => {
-        socket
-          .requestStream({
-            metadata: String.fromCharCode("todos".length) + "todos",
-          })
-          .subscribe({
-            onError: errorHanlder,
-            onNext: responseHanlder,
-            onSubscribe: (subscription) => {
-              subscription.request(100); // set it to some max value
-            },
-          });
-      };
-    },
+    ...mapMutations(['getNotifications', 'getUnreadNotifications']),
     logout() {
       let valor = null;
-      localStorage.setItem("session", valor); //Se vacia el localStorage para cerrar sesión
-      location.reload(); //Recarga de página
+      localStorage.setItem('session', (valor)) //Se vacia el localStorage para cerrar sesión
+       location.reload() //Recarga de página
     },
     chargeNotifications() {
       //Aqui se cargan las notificaciones
@@ -185,16 +145,15 @@ export default {
           this.getNotifications(response.data);
           console.log(response.data);
 
-          this.getUnreadNotifications(
-            this.items.filter((notification) => {
-              return notification.leido == false;
-            })
-          );
+          this.getUnreadNotifications(this.items.filter((notification) => {
+            return notification.leido == false;
+          }));
         });
     },
     markAsRead(id, subscriber) {
       this.usuarioService
-        .setReadNotification(id, subscriber) //Este es el servicio para cuando se lee una notificación (id de la notificación y suscripto
+        .setReadNotification(id, subscriber) /* Este es el servicio para
+        cuando se lee una notificación (id de la notificación y suscripto*/
         .then((response) => {
           this.chargeNotifications(); //Se recargan las notificaciones
         });
@@ -219,8 +178,8 @@ export default {
     this.chargeNotifications(); //Se cargan las notificaciones
   },
   computed: {
-    ...mapState(["unreadNotifications", "items", "usuario"]),
-  },
+    ...mapState(['unreadNotifications', 'items', 'usuario'])
+  }
 };
 </script>
 <style scoped>
